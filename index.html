@@ -1,0 +1,243 @@
+<!doctype html>
+<html>
+<head>
+<script src="jszip.js"></script>
+<style>
+body {
+    background: #236;
+    font-family: 'din condensed', 'ropa sans', sans-serif;
+    color: white;
+}
+canvas {
+    border-radius: 40px;
+    background: #fff;
+    width: 411px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.overlay {
+  position: absolute;
+  top: 36px;
+  left: 36px;
+  width: 339px;
+  height: 489px;
+  border: 1px dashed red;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body>
+<div style="position: relative; width: 411px; height: 561px">
+  <canvas width="822" height="1122"></canvas>
+  <div class="overlay"></div>
+</div>
+<button onclick="drawCards()">draw</button>
+<script>
+var JSZip = new require('jszip');
+var zip;
+
+var shapes = {
+    stego: '#ec8222',
+    trice: '#4d2e8e',
+    brach: '#118944',
+    ptero: '#f5bf19',
+    rex:   '#3659a7'
+};
+
+var canvas = document.querySelector('canvas'),
+    ctx = canvas.getContext('2d'),
+    w = canvas.width,
+    h = canvas.height,
+    fontSize = 240,
+    iconSize = 180,
+    pv = 120,
+    ph = 110,
+    x = 1.8;
+
+ctx.font = fontSize + 'px din condensed';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'top';
+
+function svgToPng(url, name, width, height) {
+    width = width || w
+    height = height || h
+    var image = new Image();
+    image.onload = function () {
+
+        ctx.drawImage(image, 0, 0, width, height);
+        // download(canvas.toDataURL(), name || 'img.png')
+    };
+    image.src = url;
+}
+
+function drawCard(name, number, cb) {
+    number = parseInt(number, 10);
+
+    var src = 'svg/' + name + '.svg',
+        image = new Image(),
+        width = iconSize,
+        height;
+
+    function drawNumber() {
+        var textWidth = ctx.measureText(number).width;
+        ctx.fillText(number, ph, pv);
+        ctx.drawImage(image, ph + (textWidth - width * x)/2, pv / 2 + fontSize, width * x, height * x);
+    }
+
+    function drawInner() {
+
+        var cw = (w - width) / 2,
+            ch = (h - height) / 2,
+            paddingH = 0,
+            paddingV = (h - (iconSize * 5)) / 8;
+
+        switch (number) {
+            case 1:
+                ctx.drawImage(image, cw, ch, width, height);
+                break;
+
+            case 2:
+                ctx.drawImage(image, cw, ch - height / 2 - paddingV, width, height);
+                ctx.drawImage(image, cw, ch + height / 2 + paddingV, width, height);
+                break;
+
+            case 3:
+                ctx.drawImage(image, cw, ch - height - paddingV, width, height);
+                ctx.drawImage(image, cw, ch, width, height);
+                ctx.drawImage(image, cw, ch + height + paddingV, width, height);
+                break;
+
+            case 4:
+                ctx.drawImage(image, cw - width/2 - paddingH, ch - height / 2 - paddingV, width, height);
+                ctx.drawImage(image, cw - width/2 - paddingH, ch + height / 2 + paddingV, width, height);
+                ctx.drawImage(image, cw + width/2 + paddingH, ch - height / 2 - paddingV, width, height);
+                ctx.drawImage(image, cw + width/2 + paddingH, ch + height / 2 + paddingV, width, height);
+
+                // playing around with flipping half of them
+                // ctx.save();
+                // ctx.translate(w, h);
+                // ctx.scale(-1, -1);
+                // ctx.drawImage(image, cw - width/2 - paddingH, ch - height / 2 - paddingV, width, height);
+                // ctx.drawImage(image, cw - width/2 - paddingH, ch + height / 2 + paddingV, width, height);
+                // ctx.restore();
+                break;
+
+            case 5:
+                ctx.drawImage(image, cw - width/2 - paddingH, ch - height - paddingV, width, height);
+                ctx.drawImage(image, cw - width/2 - paddingH, ch + height + paddingV, width, height);
+
+                ctx.drawImage(image, cw, ch, width, height);
+
+                ctx.drawImage(image, cw + width/2 + paddingH, ch - height - paddingV, width, height);
+                ctx.drawImage(image, cw + width/2 + paddingH, ch + height + paddingV, width, height);
+                break;
+
+            case 6:
+                ctx.drawImage(image, cw - width/2 - paddingH, ch - height - paddingV, width, height);
+                ctx.drawImage(image, cw - width/2 - paddingH, ch, width, height);
+                ctx.drawImage(image, cw - width/2 - paddingH, ch + height + paddingV, width, height);
+
+                ctx.drawImage(image, cw + width/2 + paddingH, ch - height - paddingV, width, height);
+                ctx.drawImage(image, cw + width/2 + paddingH, ch, width, height);
+                ctx.drawImage(image, cw + width/2 + paddingH, ch + height + paddingV, width, height);
+                break;
+
+            default:
+                if (!number) {
+                    break;
+                }
+                number = Math.min(999, number);
+                ctx.save()
+                ctx.globalAlpha = 0.1
+                for (var i = 0; i < number; ++i) {
+                    ctx.drawImage(image, Math.random() * (w - iconSize), Math.random() * (h - iconSize), iconSize, iconSize);
+                }
+                ctx.restore();
+                break;
+        }
+    }
+
+    image.onload = function () {
+        ctx.clearRect(0, 0, w, h);
+        ctx.save();
+        height = image.height / (image.width / width);
+
+        ctx.fillStyle = shapes[name];
+
+        drawInner();
+        drawNumber();
+        ctx.translate(w, h);
+        ctx.rotate(Math.PI);
+        drawNumber();
+        if (cb) cb(canvas.toDataURL());
+        ctx.restore();
+    };
+    image.src = src;
+
+}
+
+var allCards = [].concat.apply([], Object.keys(shapes).map(function (name) {
+    var set = [];
+    for (var i = 0; i < 5; ++i) {
+        set.push([name, i + 1]);
+    }
+    return set;
+}));
+
+function generateZip(name) {
+    console.log('generating zip for', name);
+    var content = zip.generate();
+
+    // then trigger the download link:
+    var zipName = name + '.zip';
+    download('data:application/zip;base64,' + content, zipName);
+    zip = null;
+}
+
+function download(url, name) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+}
+
+var currentCard = 1;
+var out = '';
+function drawCards() {
+    if (!zip) {
+        zip = new JSZip();
+    }
+    var args, name;
+    if (allCards.length > 0) {
+        args = allCards.shift();
+        console.log(args);
+        name = args[0] + '-' + args[1] + '.png';
+        args.push(function (url) {
+            // appendImage(url)
+            var data = url.substr(url.indexOf(','));
+            zip.file(name, data, {base64: true});
+            if (args[1] === 5) {
+                generateZip(args[0]);
+            }
+            drawCards();
+        });
+
+        console.log('drawing card', name);
+        // out += '<img src="' + name + '" width="100"/>'
+        drawCard.apply(null, args);
+    }
+}
+
+function appendImage(url) {
+    var img = new Image()
+    img.src = url
+    img.style.background = 'white'
+    document.body.appendChild(img)
+}
+
+// drawCard('seaturtle', 5)
+</script>
+</body>
+</html>
